@@ -1,6 +1,6 @@
 {
   "name": "note-calc",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Calculate arithmetic expressions in Obsidian Live Preview and Reading view.",
   "main": "main.js",
   "scripts": {
