@@ -1,0 +1,26 @@
+{
+  "name": "note-calc",
+  "version": "0.1.0",
+  "description": "Calculate arithmetic expressions in Obsidian Live Preview and Reading view.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc --noEmit --skipLibCheck && node esbuild.config.mjs production"
+  },
+  "keywords": [
+    "obsidian",
+    "calculator"
+  ],
+  "author": "Sunny Yu",
+  "license": "MIT",
+  "devDependencies": {
+    "@codemirror/language": "^6.10.8",
+    "@codemirror/state": "6.5.0",
+    "@codemirror/view": "6.38.6",
+    "@types/node": "^22.15.3",
+    "esbuild": "^0.25.3",
+    "obsidian": "1.13.1",
+    "tslib": "^2.8.1",
+    "typescript": "^5.8.3"
+  }
+}

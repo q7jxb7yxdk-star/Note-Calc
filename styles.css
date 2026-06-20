@@ -1,0 +1,50 @@
+.note-calc-answer {
+  color: var(--text-accent);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.markdown-source-view.mod-cm6 .note-calc-expression,
+.markdown-source-view.mod-cm6 .note-calc-expression em,
+.markdown-source-view.mod-cm6 .note-calc-expression .cm-em {
+  font-style: normal;
+}
+
+.markdown-source-view.mod-cm6
+  .note-calc-expression
+  .cm-formatting-em,
+.markdown-source-view.mod-cm6
+  .note-calc-expression
+  .note-calc-operator {
+  display: inline !important;
+  font-style: normal !important;
+}
+
+.markdown-source-view.mod-cm6 .note-calc-operator-widget {
+  color: var(--text-normal);
+  font-style: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.markdown-source-view.mod-cm6
+  .note-calc-expression.cm-activeLine
+  .note-calc-operator-widget {
+  display: none;
+}
+
+.markdown-source-view.mod-cm6 .note-calc-equals {
+  position: relative;
+}
+
+.markdown-source-view.mod-cm6 .note-calc-equals::after {
+  color: var(--text-accent);
+  content: attr(data-note-calc-answer);
+  font-variant-numeric: tabular-nums;
+  left: calc(100% + 0.08em);
+  pointer-events: none;
+  position: absolute;
+  top: -0.08em;
+  user-select: none;
+  white-space: pre;
+}
