@@ -1,7 +1,7 @@
 {
   "id": "note-calc",
   "name": "Note Calc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "1.5.0",
   "description": "Calculate arithmetic expressions in Live Preview and Reading view.",
   "author": "Sunny Yu",
