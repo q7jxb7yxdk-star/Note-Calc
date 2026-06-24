@@ -23,8 +23,8 @@ const EXCLUDED_NODE_NAMES = [
 ];
 
 class OperatorWidget extends WidgetType {
-  toDOM(): HTMLElement {
-    const span = document.createElement("span");
+  toDOM(view: EditorView): HTMLElement {
+    const span = view.dom.ownerDocument.createElement("span");
     span.className = "note-calc-operator-widget";
     span.textContent = "*";
     span.setAttribute("aria-hidden", "true");

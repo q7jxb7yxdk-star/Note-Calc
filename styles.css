@@ -11,13 +11,13 @@
 }
 
 .markdown-source-view.mod-cm6
-  .note-calc-expression
-  .cm-formatting-em,
+  .cm-line.note-calc-expression
+  .cm-formatting-em.cm-formatting-em,
 .markdown-source-view.mod-cm6
-  .note-calc-expression
-  .note-calc-operator {
-  display: inline !important;
-  font-style: normal !important;
+  .cm-line.note-calc-expression
+  .note-calc-operator.note-calc-operator {
+  display: inline;
+  font-style: normal;
 }
 
 .markdown-source-view.mod-cm6 .note-calc-operator-widget {

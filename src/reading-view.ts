@@ -10,7 +10,8 @@ const EXCLUDED_ELEMENTS = new Set([
 ]);
 
 export function renderReadingViewCalculations(container: HTMLElement): void {
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  const doc = container.ownerDocument;
+  const walker = doc.createTreeWalker(container, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
 
   while (walker.nextNode()) {
@@ -31,7 +32,7 @@ export function renderReadingViewCalculations(container: HTMLElement): void {
       continue;
     }
 
-    const answer = document.createElement("span");
+    const answer = doc.createElement("span");
     answer.className = "note-calc-answer";
     answer.textContent = result.answerPrefix + result.answer;
     answer.setAttribute(
