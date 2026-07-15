@@ -9,7 +9,10 @@ const EXCLUDED_ELEMENTS = new Set([
   "A",
 ]);
 
-export function renderReadingViewCalculations(container: HTMLElement): void {
+export function renderReadingViewCalculations(
+  container: HTMLElement,
+  decimalPlaces: number,
+): void {
   const doc = container.ownerDocument;
   const walker = doc.createTreeWalker(container, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
@@ -22,7 +25,7 @@ export function renderReadingViewCalculations(container: HTMLElement): void {
   }
 
   for (const node of textNodes) {
-    const result = calculateLine(node.data);
+    const result = calculateLine(node.data, { decimalPlaces });
     if (
       !result ||
       !node.parentNode ||

@@ -1,42 +1,124 @@
 export interface CalculationMatch {
   answer: string;
   answerPrefix: string;
+  expressionFrom: number;
+  expressionTo: number;
+  equalsFrom: number;
+  equalsTo: number;
 }
 
-const CALCULATION_LINE = /^(\s*)(.+?)(\s*)=(\s*)$/;
+export interface CalculationOptions {
+  decimalPlaces: number;
+}
+
+const CALCULATION_LINE = /^(.*?)(\s*)=(\s*)$/;
 const NUMBER_EPSILON = 1e-12;
 
-export function calculateLine(text: string): CalculationMatch | null {
+export function calculateLine(
+  text: string,
+  options: CalculationOptions,
+): CalculationMatch | null {
   const match = CALCULATION_LINE.exec(text);
   if (!match) {
     return null;
   }
 
-  const expression = match[2];
-  const whitespaceBeforeEquals = match[3];
-  const whitespaceAfterEquals = match[4];
+  const beforeEquals = match[1];
+  const whitespaceBeforeEquals = match[2];
+  const whitespaceAfterEquals = match[3];
+  const equalsFrom = beforeEquals.length + whitespaceBeforeEquals.length;
+  const expressionMatch = findExpressionAtEnd(beforeEquals);
+
+  if (!expressionMatch) {
+    return null;
+  }
 
   try {
-    const value = new Parser(expression).parse();
+    const value = new Parser(expressionMatch.expression).parse();
     if (!Number.isFinite(value)) {
       return null;
     }
 
     return {
-      answer: formatNumber(value),
+      answer: formatNumber(value, options.decimalPlaces),
       answerPrefix:
         whitespaceAfterEquals.length > 0 || whitespaceBeforeEquals.length > 0
           ? whitespaceAfterEquals || " "
           : "",
+      expressionFrom: expressionMatch.from,
+      expressionTo: expressionMatch.to,
+      equalsFrom,
+      equalsTo: equalsFrom + 1,
     };
   } catch {
     return null;
   }
 }
 
-function formatNumber(value: number): string {
+function formatNumber(value: number, decimalPlaces: number): string {
   const normalized = Math.abs(value) < NUMBER_EPSILON ? 0 : value;
-  return Number.parseFloat(normalized.toPrecision(12)).toString();
+  return normalized.toFixed(decimalPlaces);
+}
+
+function findExpressionAtEnd(text: string): {
+  expression: string;
+  from: number;
+  to: number;
+} | null {
+  const expressionEnd = trimEndIndex(text);
+  const trimmed = text.slice(0, expressionEnd);
+  const wholeLineExpressionStart = trimStartIndex(trimmed);
+
+  for (let index = wholeLineExpressionStart; index < trimmed.length; index += 1) {
+    if (!isExpressionStart(trimmed[index])) {
+      continue;
+    }
+
+    const expression = trimmed.slice(index);
+    if (!canParseExpression(expression)) {
+      continue;
+    }
+
+    if (index === wholeLineExpressionStart || hasOperator(expression)) {
+      return {
+        expression,
+        from: index,
+        to: expressionEnd,
+      };
+    }
+  }
+
+  return null;
+}
+
+function canParseExpression(expression: string): boolean {
+  try {
+    const value = new Parser(expression).parse();
+    return Number.isFinite(value);
+  } catch {
+    return false;
+  }
+}
+
+function hasOperator(expression: string): boolean {
+  return /[+\-−*×/÷%^]/.test(expression);
+}
+
+function isExpressionStart(character: string): boolean {
+  return /[\d.(+\-−]/.test(character);
+}
+
+function trimStartIndex(text: string): number {
+  const match = /\S/.exec(text);
+  return match?.index ?? text.length;
+}
+
+function trimEndIndex(text: string): number {
+  let index = text.length;
+  while (index > 0 && /\s/.test(text[index - 1])) {
+    index -= 1;
+  }
+  return index;
 }
 
 class Parser {

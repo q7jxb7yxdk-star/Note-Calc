@@ -36,12 +36,15 @@ class OperatorWidget extends WidgetType {
   }
 }
 
-export const noteCalcLivePreviewExtension = ViewPlugin.fromClass(
+export function createNoteCalcLivePreviewExtension(
+  getDecimalPlaces: () => number,
+) {
+  return ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
 
     constructor(view: EditorView) {
-      this.decorations = buildDecorations(view);
+      this.decorations = buildDecorations(view, getDecimalPlaces());
     }
 
     update(update: ViewUpdate): void {
@@ -51,16 +54,20 @@ export const noteCalcLivePreviewExtension = ViewPlugin.fromClass(
         update.selectionSet ||
         livePreviewChanged(update)
       ) {
-        this.decorations = buildDecorations(update.view);
+        this.decorations = buildDecorations(update.view, getDecimalPlaces());
       }
     }
   },
   {
     decorations: (plugin) => plugin.decorations,
   },
-);
+  );
+}
 
-function buildDecorations(view: EditorView): DecorationSet {
+function buildDecorations(
+  view: EditorView,
+  decimalPlaces: number,
+): DecorationSet {
   const isLivePreview = Boolean(
     view.state.field(editorLivePreviewField, false),
   );
@@ -71,7 +78,7 @@ function buildDecorations(view: EditorView): DecorationSet {
     const finalLine = view.state.doc.lineAt(range.to).number;
 
     while (line.number <= finalLine) {
-      const result = calculateLine(line.text);
+      const result = calculateLine(line.text, { decimalPlaces });
       if (
         result &&
         !isExcludedPosition(view, line.from, line.to)
@@ -88,12 +95,14 @@ function buildDecorations(view: EditorView): DecorationSet {
           builder,
           line.text,
           line.from,
+          result.expressionFrom,
+          result.expressionTo,
           isLivePreview,
           selectionTouchesLine(view, line.from, line.to),
         );
 
         if (isLivePreview) {
-          builder.add(line.to - 1, line.to, Decoration.mark({
+          builder.add(line.from + result.equalsFrom, line.from + result.equalsTo, Decoration.mark({
             class: "note-calc-equals",
             attributes: {
               "data-note-calc-answer": result.answerPrefix + result.answer,
@@ -117,10 +126,12 @@ function addOperatorDecorations(
   builder: RangeSetBuilder<Decoration>,
   text: string,
   lineFrom: number,
+  expressionFrom: number,
+  expressionTo: number,
   isLivePreview: boolean,
   isActiveLine: boolean,
 ): void {
-  for (let index = 0; index < text.length; index += 1) {
+  for (let index = expressionFrom; index < expressionTo; index += 1) {
     if (text[index] !== "*") {
       continue;
     }

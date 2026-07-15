@@ -6,20 +6,34 @@ Reading view without changing the Markdown source.
 
 ## Usage
 
-Enter an expression on its own line:
+Enter an expression ending in `=`:
 
 | Markdown source | Live Preview / Reading view |
 | --- | --- |
-| `2*3=` | `2*3=6` |
-| `2 * 3 =` | `2 * 3 = 6` |
-| `2+3*4=` | `2+3*4=14` |
-| `(2+3)×4=` | `(2+3)×4=20` |
+| `2*3=` | `2*3=6.00` |
+| `2 * 3 =` | `2 * 3 = 6.00` |
+| `2+3*4=` | `2+3*4=14.00` |
+| `(2+3)×4=` | `(2+3)×4=20.00` |
+| `Stop Loss: 208.65 - 1.9874 * 1.5 =` | `Stop Loss: 208.65 - 1.9874 * 1.5 = 205.67` |
 
 Note Calc evaluates only lines that end with `=`. If an answer is already
 present, such as `2*3=6`, the line is left unchanged.
 
 Calculations are visual only. Note Calc never writes the generated answer into
 your note.
+
+## Settings
+
+Note Calc shows results with two decimal places by default. You can change this
+from **Settings → Community plugins → Note Calc**.
+
+Available decimal place options:
+
+- `0`
+- `1`
+- `2`
+- `3`
+- `4`
 
 ## Supported syntax
 
