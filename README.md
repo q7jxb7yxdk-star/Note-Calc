@@ -33,13 +33,13 @@ The renderers contain exclusions for code, math, frontmatter, and links, but use
 
 | Area | Repository evidence |
 | --- | --- |
-| Obsidian | `manifest.json` declares minimum app version `1.5.0`, plugin version `1.1.1`, and `isDesktopOnly: false`. This declaration is not a verified compatibility matrix. |
+| Obsidian | `manifest.json` declares minimum app version `1.5.0`, plugin version `1.2.0`, and `isDesktopOnly: false`. This declaration is not a verified compatibility matrix. |
 | Development runtime | The release workflow selects Node.js **22**. No root `engines`, npm version pin, or tool-version file is declared. Locked esbuild `0.25.12` requires Node.js `>=18`; Node.js 22 matches CI. |
 | Package manager | npm; `package-lock.json` uses lockfile version 3. Use `npm ci` to install its locked dependency graph. |
 | Build tools | Locked TypeScript `5.9.3` and esbuild `0.25.12`. Type checking uses the Obsidian API package `1.13.1`; CodeMirror is supplied by the Obsidian runtime. |
 | Optional browser checks | A browser with DOM, Selection, PointerEvent, DataTransfer, ClipboardEvent, and CodeMirror support. The documented local server uses Python 3; no Python or browser version is pinned. Clipboard interaction also depends on the host's Clipboard API policy. |
 
-No OS minimum, native SDK deployment target, Xcode target/scheme, or standalone application runtime is declared. Desktop/mobile behavior and compatibility with the declared minimum Obsidian version remain **Externally unverified** in this documentation task.
+No OS minimum, native SDK deployment target, Xcode target/scheme, or standalone application runtime is declared. Desktop/mobile behavior and compatibility with the declared minimum Obsidian version remain **Externally unverified** during this release preparation.
 
 ## Installation and setup
 
@@ -72,7 +72,7 @@ There are no npm `test`, `lint`, or `format` scripts and no configured lint/form
 
 ### Optional browser regression page
 
-The test source is **Test-covered**, not evidence of a current successful run. It includes calculator cases, rendered-Markdown fixtures, actual CodeMirror views, and synthetic copy events. It does not load Obsidian or its Markdown parser.
+**Test-covered** describes the cases present in source; the fresh release-preparation result is recorded under Known limitations and evidence. It includes calculator cases, rendered-Markdown fixtures, actual CodeMirror views, and synthetic copy events. It does not load Obsidian or its Markdown parser.
 
 After installing dependencies, prepare the page outside the repository:
 
@@ -107,9 +107,19 @@ Open `http://127.0.0.1:8765/`, inspect its pass/fail report, and stop the server
 - Reading view restores hidden `*` characters only when it can match a candidate source line to rendered text. Unsupported Markdown transformations or unavailable section information can cause emphasized formulas to be skipped.
 - Live Preview exclusions depend on Obsidian's syntax tree near the start of each line; the browser harness does not reproduce all host syntax nodes or plugin/theme interactions.
 - Saved settings are shallow-merged with defaults without schema/range validation. There is no migration layer, answer cache, background service, telemetry, or plugin-owned cloud synchronization.
-- Clipboard access, mobile gestures, accessibility behavior, actual Obsidian integration, cloud-vault synchronization, and GitHub releases remain **Externally unverified** here. There are no production feature flags or separate experimental runtime modes in the current source.
+- Clipboard access, mobile gestures, accessibility behavior, actual Obsidian integration, cloud-vault synchronization, and publication of the new GitHub release remain **Externally unverified** here. There are no production feature flags or separate experimental runtime modes in the current source.
 
-**Verified in this task (documentation update, 2026-11-03):** repository/source/configuration inspection and document consistency checks. No build, browser regression suite, Obsidian runtime check, service, installation, or release was run as part of this documentation update. Test files and workflow definitions describe coverage/configuration, not successful execution. Suggested extensions are **Planned / Not implemented** recommendations in the [technical document](TECHNICAL_DOCUMENTATION.md#15-future-development).
+**Verified in this task (1.2.0 release preparation, 2026-11-03):** `npm run build`, explicit test-source TypeScript checking, `node --check main.js`, and the browser regression page (**85 passed, 0 failed**). Version/manifest/assets, lockfile dependency preservation, documentation, and whitespace checks also passed. This is a local release-preparation result, not an Obsidian compatibility or Community directory approval. The `1.2.0` tag/release remains unpublished pending confirmation. Suggested extensions are **Planned / Not implemented** recommendations in the [technical document](TECHNICAL_DOCUMENTATION.md#15-future-development).
+
+## Community Plugins release preparation
+
+The prepared version is **1.2.0**; see [release notes](CHANGELOG.md#120--unreleased). `manifest.json`, `package.json`, the lockfile root versions, and `versions.json` are aligned. The declared minimum Obsidian version remains `1.5.0`; manually validate host compatibility before publishing.
+
+The [official submission guide](https://docs.obsidian.md/Plugins/Releasing/Submit%20your%20plugin) requires a public source repository, README, license, manifest, and a GitHub release whose tag exactly matches the manifest version. For this release, the tag must be `1.2.0`, without a `v` prefix, and the assets are `main.js`, `manifest.json`, and `styles.css`.
+
+Pushing any tag triggers this repository's workflow and publishes a GitHub release; it is not configured as a draft-only workflow. Tag creation/push therefore remains a separate confirmation step after committing the preparation changes. The workflow generates release notes automatically; the prepared changelog text is available for the final release description but is not injected by CI.
+
+The [existing Community listing](https://community.obsidian.md/plugins/note-calc) was checked during preparation and displays version `1.1.1` under this repository owner. This is an update to an already listed plugin, so the initial submission flow is not required again. After the matching release and assets exist, confirm that the directory processes `1.2.0` and resolves any scanner feedback through the owning Community account. A version bump or GitHub release alone does not prove that the new version has passed review or appeared in the directory. No Community account changes or submission are performed by the local build.
 
 ## License
 

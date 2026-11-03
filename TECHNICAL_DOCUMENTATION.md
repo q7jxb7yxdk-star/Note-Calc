@@ -10,7 +10,7 @@ Note Calc is an Obsidian plugin with two rendering adapters around a shared sync
 | --- | --- |
 | **Implemented** | Code is wired into `NoteCalcPlugin.onload()`: settings, the CodeMirror extension, the Reading view postprocessor, and clipboard/notice callbacks. |
 | **Test-covered** | `tests/regression.ts` contains calculator cases, DOM fixtures, CodeMirror selection/copy tests, and an interactive fixture. Existence of a test does not establish a successful run. |
-| **Verified in this task** | During this documentation update on 2026-11-03: source/configuration inspection and static document consistency checks. No build or behavioral tests were run for this documentation task. |
+| **Verified in this task** | During 1.2.0 release preparation on 2026-11-03: production build, test-source type checking, bundle syntax validation, 85 passing browser checks, and static metadata/document checks. Host/Community approval is separate. |
 | **Externally unverified** | Actual Obsidian desktop/mobile behavior, minimum-version compatibility, OS clipboard policy, host Markdown parsing, vault synchronization, and GitHub release execution. |
 | **Experimental / Inactive** | The browser test/demo page is outside the plugin runtime. No separate experimental production path or feature flag is declared. |
 | **Planned / Not implemented** | Recommendations in section 15 only; they are not completed features or an existing delivery commitment. |
@@ -55,6 +55,7 @@ Obsidian owns registered extensions, postprocessors, and the setting tab. CodeMi
 | `esbuild.config.mjs`, `tsconfig.json` | Bundle and TypeScript configurations. |
 | `manifest.json`, `versions.json` | Plugin identity and declared minimum Obsidian versions. |
 | `.github/workflows/release.yml` | Tag-triggered release configuration. |
+| `CHANGELOG.md` | Prepared 1.2.0 release notes, local validation record, and unpublished status. |
 | `LICENSE`, `.gitignore` | Project license and exclusions for dependencies, editor/vault settings, logs, and OS files. |
 
 No native application project, Xcode scheme, entitlement, backend configuration, environment example, or extra script directory is present in the inspected repository.
@@ -175,8 +176,8 @@ There is no third-party API adapter, official/unofficial remote endpoint selecti
 
 | Configuration | Actual behavior |
 | --- | --- |
-| `manifest.json` | ID `note-calc`, name `Note Calc`, version `1.1.1`, declared minimum Obsidian `1.5.0`, mobile eligibility via `isDesktopOnly: false`. |
-| `versions.json` | Maps `1.0.0`, `1.0.1`, and `1.1.1` to minimum app version `1.5.0`; does not establish tested compatibility. |
+| `manifest.json` | ID `note-calc`, name `Note Calc`, version `1.2.0`, declared minimum Obsidian `1.5.0`, mobile eligibility via `isDesktopOnly: false`. |
+| `versions.json` | Maps `1.0.0`, `1.0.1`, `1.1.1`, and `1.2.0` to minimum app version `1.5.0`; does not establish tested compatibility. |
 | `package.json` | Only `dev` and `build` scripts; package entry `main.js`; no runtime engine/npm pin or install/test/lint/format script. |
 | `package-lock.json` | Lockfile version 3; use `npm ci` for reproducible dependency resolution. |
 | `tsconfig.json` | Strict checking, `noUnusedLocals`, ES2018 target/library plus DOM, ESNext modules, Node module resolution, helper imports, and `src/**/*.ts` inclusion. Tests are outside this include. |
@@ -229,11 +230,25 @@ npx --no-install tsc --noEmit --skipLibCheck --strict --target ES2018 --moduleRe
 
 The first checks the configured source tree. The second explicitly includes the browser test entry point and its imports. Neither runs behavioral assertions or regenerates `main.js`. They are documented manual invocations of installed tools, not additional package scripts.
 
-### Verified in this documentation task
+### Documentation-only audit (historical, 2026-11-03)
 
 The documentation-only update inspected all repository source modules, test sources, manifests, package declarations and lockfile metadata, TypeScript/esbuild settings, release configuration, license, and existing documents. Static validation checks document fences, relative links/paths, configuration/version consistency, credential-shaped text/personal paths, and preservation of files outside the two approved documents.
 
 No dependency installation, build, type-check command, browser test, server, Obsidian launch, vault installation, network query, or release was performed during this documentation task. Earlier conversation results are not used as evidence of a fresh run. Desktop/mobile behavior, host integration, minimum-version compatibility, clipboard policy, iCloud propagation, CI execution, and publication remain **Externally unverified** here.
+
+### Verified in 1.2.0 release preparation (2026-11-03)
+
+The version is aligned to `1.2.0` in `manifest.json`, `package.json`, both lockfile root version fields, and a new `versions.json` entry retaining minimum app `1.5.0`. Dependency declarations and locked dependency entries are unchanged. The production bundle was rebuilt; local checks passed:
+
+- `npm run build` (source type checking and production esbuild bundle).
+- `npx --no-install tsc --noEmit --skipLibCheck --strict --target ES2018 --moduleResolution node --module ESNext tests/regression.ts` (explicit browser-test source check).
+- `node --check main.js` (bundle syntax).
+- Fresh browser fixture execution: **85 passed, 0 failed**.
+- Manifest/version/asset, document link/fence, and Git whitespace checks.
+
+The GitHub repository was queried and confirmed public with default branch `main`; existing `1.1.1` release metadata lists the three plugin assets. This does not validate the new release. No `1.2.0` tag or GitHub release is created during preparation, no Community account/submission is changed, and no vault installation is performed. The existing Community listing was also checked and identifies Note Calc under this repository owner at version `1.1.1`. Actual Obsidian integration, declared minimum-version compatibility, mobile gestures, new release CI/provenance execution, and Community acceptance of `1.2.0` remain externally unverified.
+
+The [official submission guide](https://docs.obsidian.md/Plugins/Releasing/Submit%20your%20plugin) requires initial submission only once. [Note Calc is already listed](https://community.obsidian.md/plugins/note-calc), so this preparation is an update requiring a matching GitHub release and subsequent directory processing rather than a new initial submission. The intended tag is exactly `1.2.0`, not `v1.2.0`. This repository's any-tag workflow publishes a release rather than only preparing a draft, so tag creation/push requires a separate confirmation. The workflow generates its own release notes; [CHANGELOG.md](CHANGELOG.md) contains prepared text but is not automatically used by CI. Repository readiness is not directory listing approval.
 
 ## 13. Known limitations and technical debt
 
@@ -245,7 +260,7 @@ No dependency installation, build, type-check command, browser test, server, Obs
 - **Settings:** no persisted-data validation, schema version, migration, or explicit existing-Reading-view refresh mechanism when precision changes; the setting path requests a host options update.
 - **Copy behavior:** generated values are appended only for complete editor expression selections. Missing clipboard event data falls back to host handling. Cut and empty-selection copies are not enhanced. Clipboard requests have no coordination or retries.
 - **Validation automation:** browser tests are manual, not run in CI, and lack a CLI failure status. Host clipboard/notice failures, actual Markdown parsing, multi-cursor interactions, and minimum app-version compatibility are not comprehensively established by fixtures.
-- **Release metadata:** version `1.1.1` appears in package/manifest/lock metadata; the workflow does not check alignment with pushed tags. SDK typings `1.13.1` do not prove runtime compatibility with declared minimum app `1.5.0`.
+- **Release metadata:** version `1.2.0` appears in package/manifest/lock metadata; the workflow does not check alignment with pushed tags. SDK typings `1.13.1` do not prove runtime compatibility with declared minimum app `1.5.0`.
 
 ## 14. Design decisions and trade-offs
 
