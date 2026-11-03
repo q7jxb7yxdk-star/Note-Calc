@@ -34,13 +34,14 @@ export function calculateLine(
   }
 
   try {
-    const value = new Parser(expressionMatch.expression).parse();
+    const parser = new Parser(expressionMatch.expression);
+    const value = parser.parse();
     if (!Number.isFinite(value)) {
       return null;
     }
 
     return {
-      answer: formatNumber(value, options.decimalPlaces),
+      answer: parser.currencySymbol + formatNumber(value, options.decimalPlaces),
       answerPrefix:
         whitespaceAfterEquals.length > 0 || whitespaceBeforeEquals.length > 0
           ? whitespaceAfterEquals || " "
@@ -57,7 +58,9 @@ export function calculateLine(
 
 function formatNumber(value: number, decimalPlaces: number): string {
   const normalized = Math.abs(value) < NUMBER_EPSILON ? 0 : value;
-  return normalized.toFixed(decimalPlaces);
+  const [integer, fraction] = normalized.toFixed(decimalPlaces).split(".");
+  const groupedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return fraction === undefined ? groupedInteger : `${groupedInteger}.${fraction}`;
 }
 
 function findExpressionAtEnd(text: string): {
@@ -71,6 +74,10 @@ function findExpressionAtEnd(text: string): {
 
   for (let index = wholeLineExpressionStart; index < trimmed.length; index += 1) {
     if (!isExpressionStart(trimmed[index])) {
+      continue;
+    }
+    // Do not reinterpret a tail of an invalid formula as a new expression.
+    if (/(?:\p{Sc}|[\d,.)]\s*[+\-−*×/÷%^]?|[\d,.)][eE][+-]?)\s*$/u.test(trimmed.slice(0, index))) {
       continue;
     }
 
@@ -105,7 +112,7 @@ function hasOperator(expression: string): boolean {
 }
 
 function isExpressionStart(character: string): boolean {
-  return /[\d.(+\-−]/.test(character);
+  return /[\d.(+\-−\p{Sc}]/u.test(character);
 }
 
 function trimStartIndex(text: string): number {
@@ -123,6 +130,7 @@ function trimEndIndex(text: string): number {
 
 class Parser {
   private position = 0;
+  currencySymbol = "";
 
   constructor(private readonly source: string) {}
 
@@ -199,15 +207,26 @@ class Parser {
 
   private parseNumber(): number {
     this.skipWhitespace();
+    const currency = /^\p{Sc}/u.exec(this.source.slice(this.position));
+    if (currency) {
+      if (this.currencySymbol && this.currencySymbol !== currency[0]) {
+        throw new Error("Mixed currencies are not supported");
+      }
+      this.currencySymbol = currency[0];
+      this.position += currency[0].length;
+      this.skipWhitespace();
+    }
     const remaining = this.source.slice(this.position);
-    const match = /^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?/i.exec(remaining);
+    // Read the entire numeric token before validating grouping so malformed
+    // commas cannot leave behind a valid-looking suffix to calculate.
+    const match = /^(?:[\d,]+(?:\.[\d,]*)?|\.[\d,]+)(?:e[+-]?[\d,]+)?/i.exec(remaining);
 
-    if (!match) {
+    if (!match || !/^(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(match[0])) {
       throw new Error("Expected number");
     }
 
     this.position += match[0].length;
-    return Number(match[0]);
+    return Number(match[0].replace(/,/g, ""));
   }
 
   private consume(token: string): boolean {

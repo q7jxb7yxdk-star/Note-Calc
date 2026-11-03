@@ -1,5 +1,5 @@
 import { syntaxTree } from "@codemirror/language";
-import { RangeSetBuilder } from "@codemirror/state";
+import { EditorState, RangeSetBuilder } from "@codemirror/state";
 import {
   Decoration,
   DecorationSet,
@@ -8,9 +8,9 @@ import {
   ViewUpdate,
   WidgetType,
 } from "@codemirror/view";
-import { editorLivePreviewField } from "obsidian";
 
 import { calculateLine } from "./calculator";
+import { CopyAnswer, createAnswerElement } from "./answer";
 
 const EXCLUDED_NODE_NAMES = [
   "code",
@@ -36,15 +36,39 @@ class OperatorWidget extends WidgetType {
   }
 }
 
+class AnswerWidget extends WidgetType {
+  constructor(
+    private readonly answer: string,
+    private readonly prefix: string,
+    private readonly selected: boolean,
+    private readonly copyAnswer: CopyAnswer,
+  ) { super(); }
+
+  eq(other: AnswerWidget): boolean {
+    return this.answer === other.answer && this.prefix === other.prefix &&
+      this.selected === other.selected && this.copyAnswer === other.copyAnswer;
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const element = createAnswerElement(view.dom.ownerDocument, this.answer, this.prefix, this.copyAnswer);
+    element.classList.toggle("note-calc-answer-selected", this.selected);
+    return element;
+  }
+
+  ignoreEvent(): boolean { return true; }
+}
+
 export function createNoteCalcLivePreviewExtension(
   getDecimalPlaces: () => number,
+  isLivePreview: (state: EditorState) => boolean,
+  copyAnswer: CopyAnswer,
 ) {
-  return ViewPlugin.fromClass(
+  return [ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
 
     constructor(view: EditorView) {
-      this.decorations = buildDecorations(view, getDecimalPlaces());
+      this.decorations = buildDecorations(view, getDecimalPlaces(), isLivePreview(view.state), copyAnswer);
     }
 
     update(update: ViewUpdate): void {
@@ -52,25 +76,64 @@ export function createNoteCalcLivePreviewExtension(
         update.docChanged ||
         update.viewportChanged ||
         update.selectionSet ||
-        livePreviewChanged(update)
+        isLivePreview(update.startState) !== isLivePreview(update.state)
       ) {
-        this.decorations = buildDecorations(update.view, getDecimalPlaces());
+        this.decorations = buildDecorations(update.view, getDecimalPlaces(), isLivePreview(update.state), copyAnswer);
       }
     }
   },
   {
     decorations: (plugin) => plugin.decorations,
   },
-  );
+  ), EditorView.domEventHandlers({
+    copy(event, view) {
+      if (!isLivePreview(view.state) || !event.clipboardData) return false;
+      const selection = view.dom.ownerDocument.getSelection();
+      const answerFor = (node: Node | null) =>
+        (node?.nodeType === 1 ? node as Element : node?.parentElement)?.closest(".note-calc-answer");
+      const selectedAnswer = answerFor(selection?.anchorNode ?? null);
+      if (selection && !selection.isCollapsed && selectedAnswer &&
+          view.contentDOM.contains(selectedAnswer) && selectedAnswer === answerFor(selection.focusNode)) {
+        event.clipboardData.setData("text/plain", selection.toString());
+        event.preventDefault();
+        return true;
+      }
+
+      const ranges = view.state.selection.ranges.filter((range) => !range.empty);
+      if (!ranges.length) return false;
+      let changed = false;
+      const text = ranges.map((range) => {
+        let copied = "";
+        let position = range.from;
+        let line = view.state.doc.lineAt(range.from);
+        while (line.from <= range.to) {
+          const result = calculateLine(line.text, { decimalPlaces: getDecimalPlaces() });
+          if (result && range.from <= line.from + result.expressionFrom &&
+              range.to >= line.from + result.equalsTo && !isExcludedPosition(view, line.from, line.to)) {
+            const end = line.from + result.equalsTo;
+            copied += view.state.sliceDoc(position, end) + result.answerPrefix + result.answer;
+            position = end;
+            changed = true;
+          }
+          if (line.number === view.state.doc.lines) break;
+          line = view.state.doc.line(line.number + 1);
+        }
+        return copied + view.state.sliceDoc(position, range.to);
+      }).join(view.state.lineBreak);
+      if (!changed) return false;
+      event.clipboardData.setData("text/plain", text);
+      event.preventDefault();
+      return true;
+    },
+  })];
 }
 
 function buildDecorations(
   view: EditorView,
   decimalPlaces: number,
+  isLivePreview: boolean,
+  copyAnswer: CopyAnswer,
 ): DecorationSet {
-  const isLivePreview = Boolean(
-    view.state.field(editorLivePreviewField, false),
-  );
   const builder = new RangeSetBuilder<Decoration>();
 
   for (const range of view.visibleRanges) {
@@ -102,12 +165,12 @@ function buildDecorations(
         );
 
         if (isLivePreview) {
-          builder.add(line.from + result.equalsFrom, line.from + result.equalsTo, Decoration.mark({
-            class: "note-calc-equals",
-            attributes: {
-              "data-note-calc-answer": result.answerPrefix + result.answer,
-              "aria-label": `Equals ${result.answer}`,
-            },
+          const answerPosition = line.from + result.equalsTo;
+          const selected = view.state.selection.ranges.some((range) =>
+            !range.empty && range.from <= line.from + result.expressionFrom && range.to >= answerPosition);
+          builder.add(answerPosition, answerPosition, Decoration.widget({
+            widget: new AnswerWidget(result.answer, result.answerPrefix, selected, copyAnswer),
+            side: 1,
           }));
         }
       }
@@ -179,9 +242,4 @@ function isExcludedPosition(
   }
 
   return false;
-}
-
-function livePreviewChanged(update: ViewUpdate): boolean {
-  return update.startState.field(editorLivePreviewField, false) !==
-    update.state.field(editorLivePreviewField, false);
 }

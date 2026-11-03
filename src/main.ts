@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, Plugin, PluginSettingTab, Setting, editorLivePreviewField } from "obsidian";
 
 import { createNoteCalcLivePreviewExtension } from "./live-preview";
 import { renderReadingViewCalculations } from "./reading-view";
@@ -20,11 +20,20 @@ export default class NoteCalcPlugin extends Plugin {
     await this.loadSettings();
     this.addSettingTab(new NoteCalcSettingTab(this.app, this));
 
+    const copyAnswer = (answer: string) => {
+      void Promise.resolve().then(() => navigator.clipboard.writeText(answer)).then(
+        () => { new Notice("Answer copied"); },
+        () => { new Notice("Could not copy answer. Select the text and copy manually."); },
+      );
+    };
+
     this.registerEditorExtension(createNoteCalcLivePreviewExtension(
       () => this.settings.decimalPlaces,
+      (state) => Boolean(state.field(editorLivePreviewField, false)),
+      copyAnswer,
     ));
-    this.registerMarkdownPostProcessor((element) => {
-      renderReadingViewCalculations(element, this.settings.decimalPlaces);
+    this.registerMarkdownPostProcessor((element, context) => {
+      renderReadingViewCalculations(element, this.settings.decimalPlaces, context, copyAnswer);
     });
   }
 
